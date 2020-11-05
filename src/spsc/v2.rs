@@ -112,7 +112,7 @@ impl<T> Allocator<T> {
 
         let address = address.assume_init();
 
-        (&mut *self.memory.get_unchecked(address as usize).get())
+        Self::memory_slot_mut(&self.memory, address)
             .as_mut_ptr()
             .write(crate::Align128(value));
 
@@ -129,6 +129,13 @@ impl<T> Allocator<T> {
     //     &*(&*(&*self.memory.get_unchecked(address.value as usize).get())
     //         .as_ptr())
     // }
+
+    unsafe fn memory_slot_mut(
+        memory: &[std::UnsafeCell<std::MaybeUninit<crate::Align128<T>>>; 3],
+        address: u8,
+    ) -> &mut std::MaybeUninit<crate::Align128<T>> {
+        &mut *memory.get_unchecked(address as usize).get()
+    }
 }
 
 struct Address<T> {
