@@ -4,6 +4,7 @@
 
 mod arc;
 mod arc_handle;
+pub mod spsc;
 mod std;
 
 use crate::arc::Arc;
