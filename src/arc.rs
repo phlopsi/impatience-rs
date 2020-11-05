@@ -1,19 +1,8 @@
 use crate::std;
 
 #[repr(align(128))]
-struct Align128<T>(T);
-
-impl<T> std::Deref for Align128<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-#[repr(align(128))]
 struct RawArc<T> {
-    count: Align128<std::AtomicIsize>,
+    count: crate::Align128<std::AtomicIsize>,
     data: T,
 }
 
@@ -25,7 +14,7 @@ pub struct Arc<T> {
 impl<T> Arc<T> {
     pub fn raw(data: T) -> *const () {
         std::Box::into_raw(std::Box::new(RawArc {
-            count: Align128(std::AtomicIsize::new(0)),
+            count: crate::Align128(std::AtomicIsize::new(0)),
             data,
         })) as _
     }

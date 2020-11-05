@@ -7,6 +7,7 @@ pub use ::std::convert::AsRef;
 pub use ::std::convert::Into;
 pub use ::std::convert::TryInto;
 pub use ::std::debug_assert;
+pub use ::std::default::Default;
 pub use ::std::hint::unreachable_unchecked;
 pub use ::std::marker::Copy;
 pub use ::std::marker::PhantomData;

@@ -72,3 +72,18 @@ impl<'a, T> Producer<'a, T> {
         }
     }
 }
+
+const FREE_NONE: usize = 0b111;
+const FREE_ALL : usize = 0b000;
+
+struct Allocator<T> {
+	in_use: crate::Align128<std::AtomicUsize>,
+	memory: [std::MaybeUninit<crate::Align128<T>>;3],
+}
+
+impl<T> std::Default for Allocator<T> {
+fn default() -> Self {
+Self {
+free: crate::Align128(std::AtomicUsize::new(FREE_ALL))
+memory: MaybeUninit::uninit().assume_init()
+}}}

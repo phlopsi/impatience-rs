@@ -2,11 +2,13 @@
 #![forbid(dead_code)]
 #![forbid(unused_unsafe)]
 
+mod align128;
 mod arc;
 mod arc_handle;
 pub mod spsc;
 mod std;
 
+use crate::align128::Align128;
 use crate::arc::Arc;
 use crate::arc_handle::ArcHandle;
 
