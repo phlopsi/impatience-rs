@@ -4,9 +4,8 @@ use crate::Arc;
 const BITS_PER_BYTE: usize = 8;
 const LOG_2_128: usize = 7;
 const PTR_BIT_MASK: usize = usize::MAX >> LOG_2_128;
-
-const DATA_BIT_SHIFT: usize =
-    std::size_of::<usize>() * BITS_PER_BYTE - LOG_2_128;
+const USIZE_BITS: usize = std::size_of::<usize>() * BITS_PER_BYTE;
+const DATA_BIT_SHIFT: usize = USIZE_BITS - LOG_2_128;
 
 fn raw_arc_handle_from_ptr(ptr: *const ()) -> usize {
     ptr as usize >> LOG_2_128
@@ -215,6 +214,49 @@ where
             arc.init_count(count);
 
             std::drop(arc);
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+#[repr(transparent)]
+pub struct Handle<T> {
+    inner: u32,
+    phantom: std::PhantomData<*const T>,
+}
+
+const SIZE_OF_U32: usize = std::size_of::<u32>();
+const BIT_FIELD_WIDTH_TOTAL: usize = SIZE_OF_U32 * BITS_PER_BYTE;
+const LOG_2_512: usize = 9;
+const BIT_FIELD_WIDTH_COUNT: usize = LOG_2_512;
+const BIT_FIELD_WIDTH_INDEX: usize =
+    BIT_FIELD_WIDTH_TOTAL - BIT_FIELD_WIDTH_COUNT;
+const BIT_SHIFT_COUNT: usize = 0;
+const BIT_SHIFT_INDEX: usize = BIT_FIELD_WIDTH_INDEX;
+const MASK_COUNT: u32 = !(u32::MAX << BIT_FIELD_WIDTH_COUNT);
+const MASK_INDEX: u32 = !MASK_COUNT;
+
+impl<T> Handle<T> {
+    pub const fn count(&self) -> u32 {
+        (self.inner & MASK_COUNT) >> BIT_FIELD_WIDTH_COUNT
+    }
+
+    pub const fn index(&self) -> u32 {
+        (self.inner & MASK_INDEX) >> BIT_FIELD_WIDTH_INDEX
+    }
+}
+
+#[repr(transparent)]
+pub struct AtomicHandle<T> {
+    inner: std::AtomicU32,
+    phantom: std::PhantomData<*const T>,
+}
+
+impl<T> AtomicHandle<T> {
+    pub const fn new(handle: Handle<T>) -> Self {
+        Self {
+            inner: std::AtomicU32::new(handle.inner),
+            phantom: std::PhantomData,
         }
     }
 }

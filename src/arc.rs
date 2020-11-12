@@ -1,19 +1,19 @@
 use crate::std;
 
 #[repr(align(128))]
-struct RawArc<T> {
+struct ArcInner<T> {
     count: crate::Align128<std::AtomicIsize>,
     data: T,
 }
 
 pub struct Arc<T> {
-    ptr: std::NonNull<RawArc<T>>,
-    phantom: std::PhantomData<RawArc<T>>,
+    inner: std::NonNull<ArcInner<T>>,
+    phantom: std::PhantomData<ArcInner<T>>,
 }
 
 impl<T> Arc<T> {
     pub fn raw(data: T) -> *const () {
-        std::Box::into_raw(std::Box::new(RawArc {
+        std::Box::into_raw(std::Box::new(ArcInner {
             count: crate::Align128(std::AtomicIsize::new(0)),
             data,
         })) as _
@@ -38,7 +38,7 @@ impl<T> Arc<T> {
     /// [raw]: struct.Arc.html#method.raw
     pub unsafe fn from_raw(ptr: *const ()) -> Self {
         Self {
-            ptr: std::NonNull::new_unchecked(ptr as _),
+            inner: std::NonNull::new_unchecked(ptr as _),
             phantom: std::PhantomData,
         }
     }
@@ -57,7 +57,7 @@ impl<T> Arc<T> {
             std::debug_assert!(count >= 1);
         }
 
-        self.ptr.as_ref().count.fetch_add(count, std::SeqCst);
+        self.inner.as_ref().count.fetch_add(count, std::AcqRel);
     }
 }
 
@@ -66,27 +66,21 @@ where
     T: std::Copy,
 {
     pub unsafe fn data_from_raw(ptr: *const ()) -> T {
-        (*(ptr as *const RawArc<T>)).data
+        (*(ptr as *const ArcInner<T>)).data
     }
 }
 
 impl<T> std::Drop for Arc<T> {
-    /// Decrements the read count of the inner `RawArc`. If the count reaches 0,
-    /// the boxed `RawArc` is dropped.
+    /// Decrements the read count of the inner `ArcInner`. If the count reaches 0,
+    /// the boxed `ArcInner` is dropped.
     fn drop(&mut self) {
-        let count = unsafe {
-            self.ptr
-                .as_ref()
-                .count
-                .fetch_sub(1, std::SeqCst)
-                .checked_sub(1)
-                .unwrap_or_else(|| std::unreachable_unchecked())
-        };
+        let prev_count =
+            unsafe { self.inner.as_ref().count.fetch_sub(1, std::AcqRel) };
 
-        if 0 == count {
+        if 1 == prev_count {
             // A count of **exactly** 0 implies exclusive access to the boxed
-            // `RawArc` and ensures safe construction of the `Box` to drop it.
-            std::drop(unsafe { std::Box::from_raw(self.ptr.as_ptr()) });
+            // `ArcInner` and ensures safe construction of the `Box` to drop it.
+            std::drop(unsafe { std::Box::from_raw(self.inner.as_ptr()) });
         }
     }
 }

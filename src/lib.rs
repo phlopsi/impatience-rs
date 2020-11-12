@@ -1,8 +1,9 @@
 #![no_implicit_prelude]
-#![forbid(dead_code)]
-#![forbid(unused_unsafe)]
+//#![forbid(dead_code)]
+//#![forbid(unused_unsafe)]
 
 mod align128;
+pub mod alloc;
 mod arc;
 mod arc_handle;
 pub mod spsc;
