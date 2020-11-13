@@ -1,4 +1,24 @@
+#[cfg(loom)]
+pub use ::loom::alloc::alloc;
+#[cfg(loom)]
+pub use ::loom::alloc::dealloc;
+#[cfg(loom)]
+pub use ::loom::alloc::Layout;
+#[cfg(loom)]
+pub use ::loom::sync::atomic::AtomicIsize;
+#[cfg(loom)]
+pub use ::loom::sync::atomic::AtomicPtr;
+#[cfg(loom)]
+pub use ::loom::sync::atomic::AtomicU32;
+#[cfg(loom)]
+pub use ::loom::sync::atomic::AtomicU8;
+#[cfg(loom)]
+pub use ::loom::sync::atomic::AtomicUsize;
+#[cfg(not(loom))]
 pub use ::std::alloc::alloc;
+#[cfg(not(loom))]
+pub use ::std::alloc::dealloc;
+#[cfg(not(loom))]
 pub use ::std::alloc::Layout;
 pub use ::std::assert;
 pub use ::std::borrow::Borrow;
@@ -30,15 +50,21 @@ pub use ::std::option::Option;
 pub use ::std::option::Option::None;
 pub use ::std::option::Option::Some;
 pub use ::std::panic;
+pub use ::std::ptr;
 pub use ::std::ptr::null_mut;
 pub use ::std::ptr::NonNull;
 pub use ::std::result::Result;
 pub use ::std::result::Result::Err;
 pub use ::std::result::Result::Ok;
+#[cfg(not(loom))]
 pub use ::std::sync::atomic::AtomicIsize;
+#[cfg(not(loom))]
 pub use ::std::sync::atomic::AtomicPtr;
+#[cfg(not(loom))]
 pub use ::std::sync::atomic::AtomicU32;
+#[cfg(not(loom))]
 pub use ::std::sync::atomic::AtomicU8;
+#[cfg(not(loom))]
 pub use ::std::sync::atomic::AtomicUsize;
 pub use ::std::sync::atomic::Ordering;
 pub use ::std::sync::atomic::Ordering::AcqRel;

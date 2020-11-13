@@ -10,7 +10,7 @@ pub mod spsc;
 mod std;
 
 use crate::align128::Align128;
-use crate::arc::Arc;
+pub use crate::arc::Arc;
 use crate::arc_handle::ArcHandle;
 
 pub struct AtomicCell<T>

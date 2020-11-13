@@ -13,10 +13,21 @@ pub struct Arc<T> {
 
 impl<T> Arc<T> {
     pub fn raw(data: T) -> *const () {
-        std::Box::into_raw(std::Box::new(ArcInner {
-            count: crate::Align128(std::AtomicIsize::new(0)),
-            data,
-        })) as _
+        let uninit = unsafe {
+            std::alloc(std::Layout::new::<ArcInner<T>>()) as *mut ArcInner<T>
+        };
+
+        unsafe {
+            std::ptr::write(
+                uninit,
+                ArcInner {
+                    count: crate::Align128(std::AtomicIsize::new(0)),
+                    data,
+                },
+            );
+        }
+
+        uninit as _
     }
 
     /// Constructs an `Arc<T>` from a raw pointer.
@@ -80,7 +91,12 @@ impl<T> std::Drop for Arc<T> {
         if 1 == prev_count {
             // A count of **exactly** 0 implies exclusive access to the boxed
             // `ArcInner` and ensures safe construction of the `Box` to drop it.
-            std::drop(unsafe { std::Box::from_raw(self.inner.as_ptr()) });
+            unsafe {
+                std::dealloc(
+                    self.inner.as_ptr() as _,
+                    std::Layout::new::<ArcInner<T>>(),
+                );
+            }
         }
     }
 }
