@@ -103,8 +103,18 @@ where
     }
 
     pub fn swap(&self, other: &mut Self) {
-        let raw_handle_mut = other.handle.get_mut();
-        *raw_handle_mut = self.handle.swap(*raw_handle_mut, std::SeqCst);
+        #[cfg(loom)]
+        {
+            let raw_handle = unsafe { other.handle.unsync_load() };
+            let swap = self.handle.swap(raw_handle, std::SeqCst);
+            other.handle.with_mut(|value| *value = swap);
+        }
+
+        #[cfg(not(loom))]
+        {
+            let raw_handle_mut = other.handle.get_mut();
+            *raw_handle_mut = self.handle.swap(*raw_handle_mut, std::SeqCst);
+        }
     }
 
     pub fn get(&self) -> T {
@@ -186,7 +196,14 @@ where
 {
     fn drop(&mut self) {
         unsafe {
-            let raw_handle = *self.handle.get_mut();
+            let raw_handle = {
+                #[cfg(loom)]
+                unsafe {
+                    self.handle.unsync_load()
+                }
+                #[cfg(not(loom))]
+                *self.handle.get_mut()
+            };
 
             // SAFETY: Arc can and must be constructed in two ways only:
             // 1) By `ArcHandle::get`, if and only if the read count from the raw
@@ -253,7 +270,7 @@ pub struct AtomicHandle<T> {
 }
 
 impl<T> AtomicHandle<T> {
-    pub const fn new(handle: Handle<T>) -> Self {
+    pub fn new(handle: Handle<T>) -> Self {
         Self {
             inner: std::AtomicU32::new(handle.inner),
             phantom: std::PhantomData,

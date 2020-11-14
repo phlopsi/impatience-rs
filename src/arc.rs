@@ -68,7 +68,7 @@ impl<T> Arc<T> {
             std::debug_assert!(count >= 1);
         }
 
-        self.inner.as_ref().count.fetch_add(count, std::AcqRel);
+        self.inner.as_ref().count.fetch_add(count, std::Relaxed);
     }
 }
 
@@ -86,7 +86,7 @@ impl<T> std::Drop for Arc<T> {
     /// the boxed `ArcInner` is dropped.
     fn drop(&mut self) {
         let prev_count =
-            unsafe { self.inner.as_ref().count.fetch_sub(1, std::AcqRel) };
+            unsafe { self.inner.as_ref().count.fetch_sub(1, std::Relaxed) };
 
         if 1 == prev_count {
             // A count of **exactly** 0 implies exclusive access to the boxed
